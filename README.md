@@ -1,6 +1,9 @@
 # Introduction
 
-porkDyn 🐷 is a Dynamic DNS (DDNS) Updater for https://porkbun.com, written in Rust.
+porkDyn 🐷 is a Dynamic DNS (DDNS) Updater for https://porkbun.com, written in Rust.  
+It is designed to run in an AWS Lambda and can be used in your router (for example FRITZ!Box).
+
+![logo](./images/logos/porkDynWithCrabSmaller.jpg)
 
 ## Prerequisites
 
