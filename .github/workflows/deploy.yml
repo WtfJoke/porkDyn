@@ -2,7 +2,7 @@ name: Build & Deploy to AWS
 
 on:
   push:
-    branches: [ "main", "deploy_to_aws" ]
+    branches: [ "main" ]
 
 env:
   CARGO_TERM_COLOR: always
