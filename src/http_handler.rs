@@ -1,4 +1,6 @@
-use crate::api::{create_dns_record, get_existing_record, update_dns_record};
+use crate::api::{create_dns_record, get_existing_a_record, update_dns_record};
+use crate::credentials::Credentials;
+use crate::domain::Domain;
 use lambda_http::tracing::{error, info};
 use lambda_http::{Body, Error, Request, RequestExt, Response};
 use reqwest::Client;
@@ -24,97 +26,85 @@ pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, E
         Some(query_param) => query_param,
         None => return Ok(json_response(400, "Missing query-parameter 'secretapikey'")),
     };
-    let subdomain_with_domain = match query_params.first("domain") {
+    let qualified_domain_name = match query_params.first("domain") {
         Some(query_param) => query_param,
         None => return Ok(json_response(400, "Missing query-parameter 'domain'")),
     };
-    let ip = match query_params.first("ip") {
+    let ip: &str = match query_params.first("ip") {
         Some(query_param) => query_param,
         None => return Ok(json_response(400, "Missing query-parameter 'ip'")),
     };
     info!(
         "Valid request received for updating the dns-entry for domain: '{:?}' to ip: '{:?}'.",
-        subdomain_with_domain, ip
+        qualified_domain_name, ip
     );
 
-    // Extract domain and subdomain
-    let domain_parts: Vec<&str> = subdomain_with_domain.split('.').collect();
-    if domain_parts.len() < 3 {
-        return Ok(json_response(400, "Invalid subdomain format"));
-    }
-    let domain_name = format!(
-        "{}.{}",
-        domain_parts[domain_parts.len() - 2],
-        domain_parts.last().unwrap()
-    );
-    let subdomain = domain_parts[..domain_parts.len() - 2].join(".");
-    info!("DomainName: {:?}, Subdomain: {:?}", domain_name, subdomain);
+    // Extract domain
+    let domain: Domain = match Domain::new(qualified_domain_name) {
+        Ok(domain) => {
+            info!("Domain: {:?}", domain);
+            domain
+        }
+        Err(e) => {
+            error!("Invalid subdomain format: {:?}", e);
+            return Ok(json_response(400, "Invalid subdomain format"));
+        }
+    };
 
+    let credentials = Credentials::new(api_key.to_string(), secret_key.to_string());
     let client = Client::new();
 
     // Check if the record exists
-    match get_existing_record(
-        &client,
-        api_key,
-        secret_key,
-        &domain_name,
-        &subdomain_with_domain,
-    )
-    .await
+    let success_message: String = match get_existing_a_record(&client, &credentials, &domain).await
     {
-        Ok(Some(record)) => {
-            if record.content == ip {
-                info!(
-                    "Skip updating, record with id {:?} is already up to date.",
-                    record.id
-                );
-                return Ok(json_response(
-                    200,
-                    &format!("DNS record '{:?}' is already up to date", record.name),
-                ));
-            }
-
-            info!("Going to update existing DNS record '{:?}' of domain {:?} with subdomain: {:?} and IP: {:?}.", record, domain_name, subdomain, ip);
-            update_dns_record(
-                &client,
-                api_key,
-                secret_key,
-                &domain_name,
-                &subdomain,
-                &record.id,
-                &ip,
-            )
-            .await?;
-            Ok(json_response(
-                200,
-                &format!("DNS record '{:?}' updated successfully", record.name),
-            ))
+        // If the record exists and the IP is the same, do nothing and return a success message
+        Ok(Some(record)) if record.content == ip => {
+            info!(
+                "Skip updating, record with id {:?} is already up to date.",
+                record.id
+            );
+            format!("DNS record {:?} is already up to date", record.name)
         }
+        // If the record exists and the IP is different, update the record
+        Ok(Some(record)) => {
+            info!(
+                "Updating DNS record {:?} for domain {:?} with subdomain {:?} to IP {:?}",
+                record,
+                domain.domain_name(),
+                domain.subdomain(),
+                ip
+            );
+            update_dns_record(&client, &credentials, &domain, &record.id, ip).await?;
+            format!("DNS record '{:?}' updated successfully", record.name)
+        }
+        // If the record does not exist, create a new one
         Ok(None) => {
             info!(
-                "Going to create a new DNS record - DomainName: {:?}, Subdomain: {:?}, IP: {:?}",
-                domain_name, subdomain, ip
+                "Creating new DNS record for domain {:?} with subdomain {:?} and IP {:?}",
+                domain.domain_name(),
+                domain.subdomain(),
+                ip
             );
-            create_dns_record(&client, api_key, secret_key, &domain_name, &subdomain, &ip).await?;
-            Ok(json_response(
-                200,
-                &format!(
-                    "DNS record for subdomain '{:?}' successfully created",
-                    subdomain
-                ),
-            ))
+            create_dns_record(&client, &credentials, &domain, ip).await?;
+            format!(
+                "DNS record for subdomain '{:?}' successfully created",
+                domain.subdomain()
+            )
         }
+        // If there is an error, return a 500 error
         Err(e) => {
             error!(
-                "Failed to retrieve records for domainName {:?}: {:?}",
-                domain_name, e
+                "Failed to retrieve records for domain {:?}: {:?}",
+                domain.domain_name(),
+                e
             );
-            Ok(json_response(500, "Failed to retrieve DNS records"))
+            return Ok(json_response(500, "Failed to retrieve DNS records"));
         }
-    }
+    };
+
+    Ok(json_response(200, &success_message))
 }
 
-// Helper function to generate JSON responses
 fn json_response(status_code: u16, message: &str) -> Response<Body> {
     Response::builder()
         .status(status_code)
