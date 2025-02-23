@@ -1,11 +1,9 @@
 [build]
 arm64 = true
 
-[build.prod]
+[production.build]
 release = true
 
-[deploy]
-tracing = "active"
-
-[deploy.prod]
+[production.deploy]
 enable_function_url = true
+tracing = "active"
