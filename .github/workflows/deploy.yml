@@ -1,0 +1,41 @@
+name: Build & Deploy to AWS
+
+on:
+  push:
+    branches: [ "main", "deploy_to_aws" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build
+      run: cargo build
+    - name: Run tests
+      run: cargo test
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Install cargo-lambda
+      run: pip install cargo-lambda
+    - uses: actions/checkout@v4
+    - name: Build
+      run: cargo lambda build --context production
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-region: eu-central-1
+        role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+        role-session-name: PorkDyn-GitHub-Actions-Id-${{ github.run_id }}
+        mask-aws-account-id: true
+    - name: Deploy
+      run: cargo lambda deploy --context production
