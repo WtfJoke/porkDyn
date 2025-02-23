@@ -3,5 +3,20 @@
   "extends": [
     "config:recommended"
   ],
-  "commitMessagePrefix": "⬆️"
+  "lockFileMaintenance": {
+    "enabled": true,
+    "commitMessageAction": "Update lock files"
+  },
+  "commitMessagePrefix": "⬆️",
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "automerge": true
+    },
+    {
+      "matchUpdateTypes": ["lockFileMaintenance"],
+      "automerge": true,
+      "schedule": ["monthly"]
+    }
+  ]
 }
