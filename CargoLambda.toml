@@ -2,6 +2,7 @@
 arm64 = true
 
 [production.build]
+arm64 = true
 release = true
 
 [production.deploy]
