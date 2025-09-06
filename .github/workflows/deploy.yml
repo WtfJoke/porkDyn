@@ -33,7 +33,7 @@ jobs:
     - name: Mask AWS Lambda Function URL
       run: echo "::add-mask::${{ secrets.AWS_LAMBDA_FUNCTION_URL }}"
     - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v4
+      uses: aws-actions/configure-aws-credentials@v5
       with:
         aws-region: eu-central-1
         role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
