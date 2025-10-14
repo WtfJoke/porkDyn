@@ -5,6 +5,57 @@ It is designed to run in an AWS Lambda and can be used in your router (for examp
 
 ![logo](./images/logos/porkDynWithCrabSmaller.jpg)
 
+## Features
+
+- **IPv4 Support**: Updates A records for IPv4 addresses
+- **IPv6 Support**: Updates AAAA records for IPv6 addresses
+- **Dual Stack Support**: Update both IPv4 and IPv6 records in a single request
+- **Flexible IP Parameters**: IPv4 required, IPv6 optional for dual-stack setups
+- **AWS Lambda**: Designed to run efficiently in AWS Lambda
+- **Porkbun API**: Full integration with Porkbun DNS API
+
+## Usage
+
+The Lambda function accepts the following query parameters:
+
+- `apikey`: Your Porkbun API key (required)
+- `secretapikey`: Your Porkbun secret API key (required)
+- `domain`: The fully qualified domain name (required, e.g., `subdomain.example.com`)
+- `ip`: The IPv4 address for A record (optional, but at least one IP must be provided)
+- `ipv6`: The IPv6 address for AAAA record (optional)
+
+### Examples:
+
+**IPv4 Only:**
+
+```
+?apikey=xxx&secretapikey=yyy&domain=home.example.com&ip=192.168.1.100
+```
+
+**IPv6 Only:**
+
+```
+?apikey=xxx&secretapikey=yyy&domain=home.example.com&ipv6=2001:db8::1
+```
+
+**Dual Stack (IPv4 + IPv6):**
+
+```
+?apikey=xxx&secretapikey=yyy&domain=home.example.com&ip=192.168.1.100&ipv6=2001:db8::1
+```
+
+### Behavior:
+
+The function will:
+
+1. Validate all provided IP address formats
+2. Process each IP type separately:
+   - IPv4 addresses create/update A records
+   - IPv6 addresses create/update AAAA records
+3. Check if records already exist with the same IPs (skips update if unchanged)
+4. Create new records or update existing ones as needed
+5. Return status for all processed records
+
 ## Prerequisites
 
 - [Rust](https://www.rust-lang.org/tools/install)
