@@ -4,6 +4,7 @@ mod credentials;
 mod domain;
 mod error;
 mod http_handler;
+mod ip_utils;
 
 use http_handler::function_handler;
 

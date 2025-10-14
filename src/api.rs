@@ -1,4 +1,4 @@
-use crate::{credentials::Credentials, domain::Domain};
+use crate::{credentials::Credentials, domain::Domain, ip_utils::RecordType};
 use lambda_http::tracing::{error, info, log::debug};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -30,21 +30,23 @@ struct EditDnsRecordResponse {
 
 const API_BASE_URL: &str = "https://api.porkbun.com/api/json/v3";
 
-pub(crate) async fn get_existing_a_record(
+pub(crate) async fn get_existing_dns_record(
     client: &Client,
     credentials: &Credentials,
     domain: &Domain,
+    record_type: &RecordType,
 ) -> Result<Option<DnsRecord>, reqwest::Error> {
     let domain_name = domain.domain_name();
     let subdomain = domain.subdomain();
     let qualified_name = domain.qualified_name();
+    let record_type_str = record_type.as_str();
     let url = format!(
-        "{}/dns/retrieveByNameType/{}/A/{}",
-        API_BASE_URL, domain_name, subdomain
+        "{}/dns/retrieveByNameType/{}/{}/{}",
+        API_BASE_URL, domain_name, record_type_str, subdomain
     );
     info!(
-        "Get existing 'A' record for domain {:?} by calling {:?}",
-        domain_name, url
+        "Get existing '{}' record for domain {:?} by calling {:?}",
+        record_type_str, domain_name, url
     );
     let response: ExistingRecordsResponse = client
         .post(&url)
@@ -79,12 +81,13 @@ pub(crate) async fn update_dns_record(
     domain: &Domain,
     record_id: &str,
     ip: &str,
+    record_type: &RecordType,
 ) -> Result<(), reqwest::Error> {
     let domain_name = domain.domain_name();
     let subdomain = domain.subdomain();
     let url: String = format!("{}/dns/edit/{}/{}", API_BASE_URL, domain_name, record_id);
     let request_body: CreateUpdateDnsRecordRequest =
-        CreateUpdateDnsRecordRequest::new(credentials, subdomain, ip);
+        CreateUpdateDnsRecordRequest::new(credentials, subdomain, ip, record_type);
     info!(
         "Update DNS record: {:?} for subdomain {:?}.",
         url, subdomain
@@ -110,12 +113,13 @@ pub(crate) async fn create_dns_record(
     credentials: &Credentials,
     domain: &Domain,
     ip: &str,
+    record_type: &RecordType,
 ) -> Result<(), reqwest::Error> {
     let domain_name = domain.domain_name();
     let subdomain = domain.subdomain();
     let url = format!("{}/dns/create/{}", API_BASE_URL, domain_name);
     let request_body: CreateUpdateDnsRecordRequest =
-        CreateUpdateDnsRecordRequest::new(credentials, subdomain, ip);
+        CreateUpdateDnsRecordRequest::new(credentials, subdomain, ip, record_type);
     info!("Create DNS record: {:?} for subdomain {:?}", url, subdomain);
     let create_response: CreateDnsRecordResponse = client
         .post(&url)
@@ -146,12 +150,17 @@ struct CreateUpdateDnsRecordRequest {
 }
 
 impl CreateUpdateDnsRecordRequest {
-    pub fn new(credentials: &Credentials, subdomain: &str, ip: &str) -> Self {
+    pub fn new(
+        credentials: &Credentials,
+        subdomain: &str,
+        ip: &str,
+        record_type: &RecordType,
+    ) -> Self {
         CreateUpdateDnsRecordRequest {
             apikey: credentials.api_key().into(),
             secret_api_key: credentials.secret_key().into(),
             name: subdomain.into(),
-            record_type: "A".into(),
+            record_type: record_type.as_str().into(),
             content: ip.into(),
             ttl: 600,
         }
