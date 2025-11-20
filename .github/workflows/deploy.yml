@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
     - name: Build
       run: cargo build
     - name: Run tests
@@ -27,7 +27,7 @@ jobs:
     steps:
     - name: Install cargo-lambda
       run: pip install cargo-lambda
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
     - name: Build
       run: cargo lambda build --context production
     - name: Mask AWS Lambda Function URL
