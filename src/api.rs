@@ -29,6 +29,7 @@ struct EditDnsRecordResponse {
 }
 
 const API_BASE_URL: &str = "https://api.porkbun.com/api/json/v3";
+const DEFAULT_TTL: u64 = 600;
 
 pub(crate) async fn get_existing_dns_record(
     client: &Client,
@@ -162,7 +163,7 @@ impl CreateUpdateDnsRecordRequest {
             name: subdomain.into(),
             record_type: record_type.as_str().into(),
             content: ip.into(),
-            ttl: 600,
+            ttl: DEFAULT_TTL,
         }
     }
 }
