@@ -15,17 +15,20 @@ pub struct DnsRecord {
 struct ExistingRecordsResponse {
     status: String,
     records: Option<Vec<DnsRecord>>,
+    message: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
 struct CreateDnsRecordResponse {
     status: String,
-    id: u64,
+    id: Option<u64>,
+    message: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
 struct EditDnsRecordResponse {
     status: String,
+    message: Option<String>,
 }
 
 const API_BASE_URL: &str = "https://api.porkbun.com/api/json/v3";
@@ -57,21 +60,28 @@ pub(crate) async fn get_existing_dns_record(
         .json()
         .await?;
 
-    if response.status == "SUCCESS" {
-        if let Some(records) = response.records {
-            info!("Found record: {:?}", records);
-            for record in records {
-                debug!("Checking record: {:?} to find {:?}", record, qualified_name);
-                if record.name == qualified_name {
-                    info!(
-                        "Found matching record for subdomain {:?}: {:?}",
-                        qualified_name, record
-                    );
-                    return Ok(Some(record));
-                }
+    if response.status != "SUCCESS" {
+        let error_msg = response
+            .message
+            .unwrap_or_else(|| "Failed to retrieve DNS records".to_string());
+        error!("Failed to retrieve DNS records: {}", error_msg);
+        return Err(ApiError::RetrieveRecordFailed(error_msg));
+    }
+
+    if let Some(records) = response.records {
+        info!("Found record: {:?}", records);
+        for record in records {
+            debug!("Checking record: {:?} to find {:?}", record, qualified_name);
+            if record.name == qualified_name {
+                info!(
+                    "Found matching record for subdomain {:?}: {:?}",
+                    qualified_name, record
+                );
+                return Ok(Some(record));
             }
         }
     }
+
     info!("No existing record found.");
     Ok(None)
 }
@@ -105,8 +115,11 @@ pub(crate) async fn update_dns_record(
         info!("Updated DNS record with id: {:?}", record_id);
         Ok(())
     } else {
-        error!("Failed to update DNS record");
-        Err(ApiError::UpdateRecordFailed)
+        let error_msg = edit_response
+            .message
+            .unwrap_or_else(|| "Unknown error".to_string());
+        error!("Failed to update DNS record: {}", error_msg);
+        Err(ApiError::UpdateRecordFailed(error_msg))
     }
 }
 
@@ -135,8 +148,11 @@ pub(crate) async fn create_dns_record(
         info!("Created DNS record with id: {:?}", create_response.id);
         Ok(())
     } else {
-        error!("Failed to create DNS record");
-        Err(ApiError::CreateRecordFailed)
+        let error_msg = create_response
+            .message
+            .unwrap_or_else(|| "Unknown error".to_string());
+        error!("Failed to create DNS record: {}", error_msg);
+        Err(ApiError::CreateRecordFailed(error_msg))
     }
 }
 

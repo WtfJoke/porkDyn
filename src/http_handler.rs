@@ -1,6 +1,7 @@
 use crate::api::{create_dns_record, get_existing_dns_record, update_dns_record};
 use crate::credentials::Credentials;
 use crate::domain::Domain;
+use crate::error::ApiError;
 use crate::ip_utils::{validate_and_classify_ip, IpType, RecordType};
 use lambda_http::tracing::{error, info};
 use lambda_http::{Body, Error, Request, RequestExt, Response};
@@ -139,13 +140,22 @@ pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, E
                     ip_update.record_type.as_str(),
                     e
                 );
-                return Ok(json_response(
-                    500,
-                    &format!(
-                        "Failed to process {} record",
-                        ip_update.record_type.as_str()
-                    ),
-                ));
+                // Determine status code based on error type
+                let (status_code, error_message) =
+                    if let Some(api_error) = e.downcast_ref::<ApiError>() {
+                        // API errors (Porkbun failures) return 502 Bad Gateway
+                        (502, format!("Upstream DNS service error: {}", api_error))
+                    } else {
+                        // Other errors return 500 Internal Server Error
+                        (
+                            500,
+                            format!(
+                                "Failed to process {} record",
+                                ip_update.record_type.as_str()
+                            ),
+                        )
+                    };
+                return Ok(json_response(status_code, &error_message));
             }
         }
     }
