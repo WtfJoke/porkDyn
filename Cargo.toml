@@ -2,6 +2,7 @@
 name = "pork_dyn"
 version = "0.1.0"
 edition = "2021"
+description = "Dynamic DNS updater for Porkbun.com with IPv4/IPv6 dual-stack support"
 
 [dependencies]
 lambda_http = "1.0"
