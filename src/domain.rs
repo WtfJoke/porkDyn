@@ -54,9 +54,8 @@ mod tests {
     fn test_new_valid_domain() {
         let qualified_name_input = "api.example.com";
         let domain = Domain::new(qualified_name_input);
-        assert_eq!(
+        assert!(
             domain.is_ok(),
-            true,
             "Domain: {} should be valid",
             qualified_name_input
         );
@@ -75,7 +74,7 @@ mod tests {
 
         for domain in valid_domains {
             let result = Domain::new(domain);
-            assert_eq!(result.is_ok(), true, "Domain: {}", domain);
+            assert!(result.is_ok(), "Domain: {}", domain);
             let domain = result.unwrap();
             assert_eq!(domain.domain_name(), "example.com");
         }
@@ -92,7 +91,7 @@ mod tests {
 
         for domain in invalid_domains {
             let result = Domain::new(domain);
-            assert_eq!(result.is_err(), true, "Domain: {}", domain);
+            assert!(result.is_err(), "Domain: {}", domain);
         }
     }
 }

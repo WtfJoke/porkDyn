@@ -8,6 +8,7 @@ pub enum IpType {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+#[allow(clippy::upper_case_acronyms)]
 pub enum RecordType {
     A,
     AAAA,
