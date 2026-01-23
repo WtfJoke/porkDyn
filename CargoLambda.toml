@@ -8,3 +8,4 @@ release = true
 [production.deploy]
 enable_function_url = true
 tracing = "active"
+description = "Dynamic DNS updater for Porkbun.com with IPv4/IPv6 dual-stack support"

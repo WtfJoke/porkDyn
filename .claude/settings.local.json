@@ -10,7 +10,8 @@
       "Bash(cargo tree:*)",
       "WebSearch",
       "WebFetch(domain:github.com)",
-      "Bash(cargo check:*)"
+      "Bash(cargo check:*)",
+      "WebFetch(domain:www.cargo-lambda.info)"
     ]
   }
 }
