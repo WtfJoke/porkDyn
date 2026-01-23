@@ -1,4 +1,4 @@
-use crate::{credentials::Credentials, domain::Domain, ip_utils::RecordType};
+use crate::{credentials::Credentials, domain::Domain, error::ApiError, ip_utils::RecordType};
 use lambda_http::tracing::{error, info, log::debug};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -36,7 +36,7 @@ pub(crate) async fn get_existing_dns_record(
     credentials: &Credentials,
     domain: &Domain,
     record_type: &RecordType,
-) -> Result<Option<DnsRecord>, reqwest::Error> {
+) -> Result<Option<DnsRecord>, ApiError> {
     let domain_name = domain.domain_name();
     let subdomain = domain.subdomain();
     let qualified_name = domain.qualified_name();
@@ -83,7 +83,7 @@ pub(crate) async fn update_dns_record(
     record_id: &str,
     ip: &str,
     record_type: &RecordType,
-) -> Result<(), reqwest::Error> {
+) -> Result<(), ApiError> {
     let domain_name = domain.domain_name();
     let subdomain = domain.subdomain();
     let url: String = format!("{}/dns/edit/{}/{}", API_BASE_URL, domain_name, record_id);
@@ -103,10 +103,11 @@ pub(crate) async fn update_dns_record(
 
     if edit_response.status == "SUCCESS" {
         info!("Updated DNS record with id: {:?}", record_id);
+        Ok(())
     } else {
         error!("Failed to update DNS record");
+        Err(ApiError::UpdateRecordFailed)
     }
-    Ok(())
 }
 
 pub(crate) async fn create_dns_record(
@@ -115,7 +116,7 @@ pub(crate) async fn create_dns_record(
     domain: &Domain,
     ip: &str,
     record_type: &RecordType,
-) -> Result<(), reqwest::Error> {
+) -> Result<(), ApiError> {
     let domain_name = domain.domain_name();
     let subdomain = domain.subdomain();
     let url = format!("{}/dns/create/{}", API_BASE_URL, domain_name);
@@ -132,10 +133,11 @@ pub(crate) async fn create_dns_record(
 
     if create_response.status == "SUCCESS" {
         info!("Created DNS record with id: {:?}", create_response.id);
+        Ok(())
     } else {
         error!("Failed to create DNS record");
+        Err(ApiError::CreateRecordFailed)
     }
-    Ok(())
 }
 
 #[derive(Debug, Serialize)]

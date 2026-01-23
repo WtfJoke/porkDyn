@@ -160,7 +160,7 @@ async fn process_dns_record(
     domain: &Domain,
     ip: &str,
     record_type: &RecordType,
-) -> Result<String, reqwest::Error> {
+) -> Result<String, Box<dyn std::error::Error>> {
     // Check if the record exists
     match get_existing_dns_record(client, credentials, domain, record_type).await {
         // If the record exists and the IP is the same, do nothing and return a success message
@@ -217,16 +217,19 @@ async fn process_dns_record(
                 domain.domain_name(),
                 e
             );
-            Err(e)
+            Err(Box::new(e))
         }
     }
 }
 
 fn json_response(status_code: u16, message: &str) -> Response<Body> {
+    let response_body = serde_json::json!({
+        "message": message
+    });
     Response::builder()
         .status(status_code)
         .header("Content-Type", "application/json")
-        .body(Body::Text(format!("{{\"message\": \"{}\"}}", message)))
+        .body(Body::Text(response_body.to_string()))
         .unwrap()
 }
 
