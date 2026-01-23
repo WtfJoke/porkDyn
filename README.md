@@ -66,30 +66,40 @@ The deployment will:
 
 #### Using the Lambda Function URL
 
-Your DDNS update URL will be:
+Your DDNS update URL format (choose one):
 
+**IPv4 only:**
 ```
-https://YOUR-LAMBDA-URL/?apikey=YOUR_API_KEY&secretapikey=YOUR_SECRET_KEY&domain=home.example.com&ip=<ipaddr>&ipv6=<ip6addr>
+https://YOUR-LAMBDA-URL/?apikey=<YOUR_API_KEY>&secretapikey=<YOUR_SECRET_KEY>&domain=<SUBDOMAIN>&ip=<IPV4_ADDRESS>
 ```
 
-Replace:
+**Dual stack (IPv4 + IPv6):**
+```
+https://YOUR-LAMBDA-URL/?apikey=<YOUR_API_KEY>&secretapikey=<YOUR_SECRET_KEY>&domain=<SUBDOMAIN>&ip=<IPV4_ADDRESS>&ipv6=<IPV6_ADDRESS>
+```
+
+Replace the placeholders:
 - `YOUR-LAMBDA-URL` with your actual Lambda Function URL
-- `YOUR_API_KEY` with your Porkbun API key
-- `YOUR_SECRET_KEY` with your Porkbun secret API key
-- `home.example.com` with your subdomain
+- `<YOUR_API_KEY>` with your Porkbun API key
+- `<YOUR_SECRET_KEY>` with your Porkbun secret API key
+- `<SUBDOMAIN>` with your subdomain (e.g., `home.example.com`)
+- `<IPV4_ADDRESS>` with your IPv4 address (e.g., `1.2.3.4`)
+- `<IPV6_ADDRESS>` with your IPv6 address (e.g., `2001:db8::1`)
 
 #### FRITZ!Box Setup
 
 1. Navigate to: **Internet → Shares → DynDNS**
 2. Select **Custom** as the provider
 3. Configure:
-   - **Update URL**: Your full Lambda URL from above
+   - **Update URL** (choose one):
+     - **IPv4 only**: `https://YOUR-LAMBDA-URL/?apikey=<username>&secretapikey=<pass>&domain=<domain>&ip=<ipaddr>`
+     - **Dual stack (IPv4 + IPv6)**: `https://YOUR-LAMBDA-URL/?apikey=<username>&secretapikey=<pass>&domain=<domain>&ip=<ipaddr>&ipv6=<ip6addr>`
    - **Domain name**: Your subdomain (e.g., `home.example.com`)
-   - **Username**: (leave empty or use a placeholder)
-   - **Password**: (leave empty or use a placeholder)
+   - **Username**: Your Porkbun API key
+   - **Password**: Your Porkbun secret API key
 4. Click **Apply**
 
-Note: FRITZ!Box will automatically replace `<ipaddr>` with your IPv4 and `<ip6addr>` with your IPv6 address.
+Note: FRITZ!Box will automatically replace `<username>` with the Username field, `<pass>` with the Password field, `<domain>` with the Domain name field, `<ipaddr>` with your IPv4, and `<ip6addr>` with your IPv6 address.
 
 #### Other Routers
 
