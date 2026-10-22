@@ -73,6 +73,11 @@ Your DDNS update URL format (choose one):
 https://YOUR-LAMBDA-URL/?apikey=<YOUR_API_KEY>&secretapikey=<YOUR_SECRET_KEY>&domain=<SUBDOMAIN>&ip=<IPV4_ADDRESS>
 ```
 
+**IPv6 only:**
+```
+https://YOUR-LAMBDA-URL/?apikey=<YOUR_API_KEY>&secretapikey=<YOUR_SECRET_KEY>&domain=<SUBDOMAIN>&ipv6=<IPV6_ADDRESS>
+```
+
 **Dual stack (IPv4 + IPv6):**
 ```
 https://YOUR-LAMBDA-URL/?apikey=<YOUR_API_KEY>&secretapikey=<YOUR_SECRET_KEY>&domain=<SUBDOMAIN>&ip=<IPV4_ADDRESS>&ipv6=<IPV6_ADDRESS>
@@ -155,28 +160,47 @@ You should receive a JSON response indicating success or any errors.
 
 ### How It Works
 
-1. **Validates** all provided IP addresses and credentials
-2. **Checks** if DNS records already exist with the same IP addresses
-3. **Skips** updates if the IP hasn't changed (saves API calls)
-4. **Creates** new DNS records if they don't exist
-5. **Updates** existing records if the IP has changed
-6. **Returns** JSON response with status for each operation
+1. **Validates** required query parameters, all supplied IP addresses and their families, and the subdomain format before contacting Porkbun. Porkbun checks credential validity.
+2. **Reconciles** each supplied address, processing A before AAAA for dual-stack requests.
+3. **Skips** writes when the existing record's address text exactly matches the requested text. Equivalent IPv6 spellings can trigger an update.
+4. **Creates** absent records or **updates** changed records, using a TTL of 600 seconds for writes.
+5. **Returns** a message-only JSON response. Successful dual-stack messages are joined with `; ` in A-then-AAAA order.
+
+Processing stops at the first upstream failure. An A failure prevents AAAA processing. If AAAA fails after A was changed, the A change remains and the response contains only the error.
 
 ### Response Format
 
+Responses use `Content-Type: application/json` and contain only `message`. The HTTP status communicates the result: **200** for success, **400** for invalid input, and **502** for upstream failures (including network and response-decoding errors).
+
+Example success (HTTP 200):
+
 ```json
 {
-  "status": "success",
-  "message": "IPv4 updated successfully, IPv6 skipped (unchanged)"
+  "message": "A record '\"home.example.com\"' updated successfully; AAAA record \"home.example.com\" is already up to date"
 }
 ```
 
-Or in case of errors:
+Example creation (HTTP 200):
 
 ```json
 {
-  "status": "error",
-  "message": "Invalid IPv4 address format"
+  "message": "A record for subdomain '\"home\"' successfully created"
+}
+```
+
+Example validation error (HTTP 400):
+
+```json
+{
+  "message": "Missing query-parameter 'apikey'"
+}
+```
+
+Example upstream error (HTTP 502):
+
+```json
+{
+  "message": "Upstream DNS service error: Failed to retrieve DNS record: Access denied"
 }
 ```
 
@@ -202,9 +226,18 @@ Read more in [the Cargo Lambda build documentation](https://www.cargo-lambda.inf
 
 ## Testing
 
-You can run regular Rust unit tests with `cargo test`.
+Run the validation and local HTTP integration tests with `cargo test --locked`. The reconciliation and handler tests use a local mock Porkbun server through the real client; they need no Porkbun credentials or AWS deployment.
 
-If you want to run integration tests locally, you can use the `cargo lambda watch` and `cargo lambda invoke` commands to do it.
+The repository checks are:
+
+```bash
+cargo fmt --check
+cargo clippy --locked --all-targets --all-features -- -D warnings
+cargo build --locked
+cargo test --locked
+```
+
+To exercise the Lambda runtime locally, use `cargo lambda watch` and `cargo lambda invoke`. Valid DNS-update requests through that runtime contact the real Porkbun API.
 
 First, run `cargo lambda watch` to start a local server. When you make changes to the code, the server will automatically restart.
 
