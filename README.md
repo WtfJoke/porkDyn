@@ -2,7 +2,9 @@
 
 A Dynamic DNS (DDNS) updater for [Porkbun.com](https://porkbun.com), written in Rust and designed to run as an AWS Lambda function.
 
-![logo](./images/logos/porkDynWithCrabSmaller.jpg)
+<p align="center">
+  <img src="./images/logos/porkDyn.png" alt="porkDyn Logo">
+</p>
 
 ## Features
 
@@ -27,6 +29,7 @@ A Dynamic DNS (DDNS) updater for [Porkbun.com](https://porkbun.com), written in 
 Decide on a subdomain for your DDNS (e.g., `home.yourdomain.com`). The subdomain must have at least 3 parts: `subdomain.domain.tld`.
 
 Examples:
+
 - ✅ `home.example.com`
 - ✅ `vpn.mydomain.org`
 - ❌ `example.com` (needs a subdomain)
@@ -56,6 +59,7 @@ cargo lambda deploy
 ```
 
 The deployment will:
+
 - Create an IAM role for the Lambda function
 - Deploy the function with a public Function URL
 - Set up necessary permissions
@@ -69,21 +73,25 @@ The deployment will:
 Your DDNS update URL format (choose one):
 
 **IPv4 only:**
+
 ```
 https://YOUR-LAMBDA-URL/?apikey=<YOUR_API_KEY>&secretapikey=<YOUR_SECRET_KEY>&domain=<SUBDOMAIN>&ip=<IPV4_ADDRESS>
 ```
 
 **IPv6 only:**
+
 ```
 https://YOUR-LAMBDA-URL/?apikey=<YOUR_API_KEY>&secretapikey=<YOUR_SECRET_KEY>&domain=<SUBDOMAIN>&ipv6=<IPV6_ADDRESS>
 ```
 
 **Dual stack (IPv4 + IPv6):**
+
 ```
 https://YOUR-LAMBDA-URL/?apikey=<YOUR_API_KEY>&secretapikey=<YOUR_SECRET_KEY>&domain=<SUBDOMAIN>&ip=<IPV4_ADDRESS>&ipv6=<IPV6_ADDRESS>
 ```
 
 Replace the placeholders:
+
 - `YOUR-LAMBDA-URL` with your actual Lambda Function URL
 - `<YOUR_API_KEY>` with your Porkbun API key
 - `<YOUR_SECRET_KEY>` with your Porkbun secret API key
@@ -131,29 +139,32 @@ You should receive a JSON response indicating success or any errors.
 
 ### Query Parameters
 
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| `apikey` | Yes | Your Porkbun API key |
-| `secretapikey` | Yes | Your Porkbun secret API key |
-| `domain` | Yes | Fully qualified domain name (e.g., `home.example.com`) |
-| `ip` | No* | IPv4 address to update (A record) |
-| `ipv6` | No* | IPv6 address to update (AAAA record) |
+| Parameter      | Required | Description                                            |
+| -------------- | -------- | ------------------------------------------------------ |
+| `apikey`       | Yes      | Your Porkbun API key                                   |
+| `secretapikey` | Yes      | Your Porkbun secret API key                            |
+| `domain`       | Yes      | Fully qualified domain name (e.g., `home.example.com`) |
+| `ip`           | No\*     | IPv4 address to update (A record)                      |
+| `ipv6`         | No\*     | IPv6 address to update (AAAA record)                   |
 
 \* At least one IP address (`ip` or `ipv6`) must be provided.
 
 ### URL Examples
 
 **IPv4 Only:**
+
 ```
 ?apikey=xxx&secretapikey=yyy&domain=home.example.com&ip=192.168.1.100
 ```
 
 **IPv6 Only:**
+
 ```
 ?apikey=xxx&secretapikey=yyy&domain=home.example.com&ipv6=2001:db8::1
 ```
 
 **Dual Stack:**
+
 ```
 ?apikey=xxx&secretapikey=yyy&domain=home.example.com&ip=192.168.1.100&ipv6=2001:db8::1
 ```
